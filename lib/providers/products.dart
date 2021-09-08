@@ -179,7 +179,7 @@ class Products with ChangeNotifier {
 
       throw HttpException('Could not delete product');
     }
-    existingProduct = null as Product;
+    existingProduct.dispose();
 
     // _items.removeWhere((element) => element.id == id);
   }
