@@ -68,9 +68,12 @@ class Products with ChangeNotifier {
   //   _showFavoritesOnly = false;
   //   notifyListeners();
   // }
+  final String authToke;
+
+  Products(this.authToke, this._items);
   Future<void> fetchAndSetProducts() async {
-    const url =
-        "https://myshop-99ce6-default-rtdb.firebaseio.com/products.json";
+    final url =
+        "https://myshop-99ce6-default-rtdb.firebaseio.com/products.json?auth=$authToke";
 
     final Uri _uri = Uri.parse(url);
     final respose = await http.get(_uri);
