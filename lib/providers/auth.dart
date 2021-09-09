@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:async';
 
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:myshop/models/http_exception.dart';
 
 class Auth with ChangeNotifier {
@@ -63,6 +64,14 @@ class Auth with ChangeNotifier {
       _autoLogout();
       notifyListeners();
 
+      final prefs = await SharedPreferences.getInstance();
+      final userData = json.encode({
+        'token': _token,
+        'userId': _userId,
+        'expiryDate': _exporyDate.toIso8601String()
+      });
+      prefs.setString('userData', userData);
+
       print(json.decode(response.body));
     } catch (error) {
       throw error;
@@ -77,7 +86,33 @@ class Auth with ChangeNotifier {
     return _authenticate(email, password, 'signInWithPassword');
   }
 
-  void logout() {
+  Future<bool> tryAutoLogin() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (!prefs.containsKey('userData')) {
+      return false;
+    }
+
+    final extractedUserData = json.decode(prefs.getString('userData') as String)
+        as Map<String, Object>;
+
+    final expiryDate =
+        DateTime.parse(extractedUserData['expiryDate'] as String);
+
+    if (expiryDate.isBefore(DateTime.now())) {
+      return false;
+    }
+
+    _token = extractedUserData['tokem'] as String;
+    _userId = extractedUserData['userId'] as String;
+    _exporyDate = expiryDate;
+
+    notifyListeners();
+    _autoLogout();
+    return true;
+  }
+
+  Future<void> logout() async {
     _token = "0";
     _userId = "0";
     _exporyDate = DateTime.now();
@@ -85,6 +120,9 @@ class Auth with ChangeNotifier {
       _authTimer.cancel();
     }
     notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    prefs.clear(); //this one remove all the shared pref data so use if you have
+    //so use prefs.remove('userData) mthod it can be use to remove paticulara only
   }
 
   late Timer _authTimer;
