@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'dart:async';
 
 import 'package:myshop/models/http_exception.dart';
 
@@ -59,6 +60,7 @@ class Auth with ChangeNotifier {
           ),
         ),
       );
+      _autoLogout();
       notifyListeners();
 
       print(json.decode(response.body));
@@ -73,5 +75,26 @@ class Auth with ChangeNotifier {
 
   Future<void> login(String email, String password) async {
     return _authenticate(email, password, 'signInWithPassword');
+  }
+
+  void logout() {
+    _token = "0";
+    _userId = "0";
+    _exporyDate = DateTime.now();
+    if (_authTimer.isActive) {
+      _authTimer.cancel();
+    }
+    notifyListeners();
+  }
+
+  late Timer _authTimer;
+
+  void _autoLogout() {
+    if (_authTimer.isActive) {
+      _authTimer.cancel();
+    }
+    final timeToExpiry = _exporyDate.difference(DateTime.now()).inSeconds;
+
+    _authTimer = Timer(Duration(seconds: timeToExpiry), logout);
   }
 }
